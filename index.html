@@ -113,6 +113,17 @@
     .episode-link{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:100px;border:1px solid var(--border2);font-size:12.5px;font-weight:700;color:var(--grey2);text-decoration:none;transition:border-color 0.2s,color 0.2s;}
     .episode-link:hover{border-color:var(--gold);color:var(--gold);}
     .episodes-more-title{font-size:20px;font-weight:800;color:var(--white);margin-bottom:10px;letter-spacing:-0.2px;}
+    .season-tabs{display:flex;gap:10px;margin-bottom:44px;flex-wrap:wrap;}
+    .season-tab{padding:10px 26px;border-radius:100px;border:1px solid var(--border2);font-size:13px;font-weight:700;color:var(--grey2);background:transparent;cursor:pointer;font-family:'Manrope',sans-serif;transition:border-color 0.2s,color 0.2s,background 0.2s;}
+    .season-tab:hover{border-color:var(--gold);color:var(--gold);}
+    .season-tab.active{background:var(--gold);border-color:var(--gold);color:var(--navy);}
+    .season-subtitle{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--grey);margin-bottom:28px;}
+    .ep-pagination{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:36px;}
+    .ep-page-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border2);background:transparent;color:var(--grey2);font-size:13px;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif;transition:border-color 0.2s,color 0.2s,background 0.2s;display:flex;align-items:center;justify-content:center;}
+    .ep-page-btn:hover{border-color:var(--gold);color:var(--gold);}
+    .ep-page-btn.active{background:var(--gold);border-color:var(--gold);color:var(--navy);}
+    .ep-page-btn:disabled{opacity:0.3;cursor:default;}
+    .season-empty{text-align:center;padding:60px 40px;color:var(--grey);font-size:14px;line-height:1.7;}
     /* Mailchimp notify form */
     .mc-notify{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
     .mc-notify input[type="email"]{background:var(--navy3);border:1px solid var(--border2);border-radius:100px;padding:11px 22px;font-size:13px;color:var(--white);font-family:'Manrope',sans-serif;outline:none;width:260px;}
@@ -334,21 +345,15 @@
     <span class="section-label">Episodes</span>
     <h2 class="section-title">The <em>conversations</em><br>have begun.</h2>
   </div>
-  <div class="episodes-grid">
-    <div class="episode-card reveal reveal-delay-1">
-      <div class="episode-num">01</div>
-      <div class="episode-body">
-        <div class="episode-title">TUP1: The Day My Playbook Stopped Working</div>
-        <p class="episode-desc">Why moving from viewing training as an &ldquo;event&rdquo; to treating it as a &ldquo;systemic intervention&rdquo; is the key to creating lasting change &mdash; and what it took to unlearn the old way.</p>
-        <div class="episode-links">
-          <a class="episode-link" href="https://www.youtube.com/watch?v=UB4dAqYOawU&list=PLbCM4pj3ScBC6AyNVp-HRRccUESqLCnBZ" target="_blank">&#9654; YouTube</a>
-          <a class="episode-link" href="https://open.spotify.com/episode/3k3Hyr8zZOYxaKmAEqqcwD" target="_blank">Spotify</a>
-          <a class="episode-link" href="https://podcasts.apple.com/us/podcast/tup1-the-day-my-playbook-stopped-working/id1896925389?i=1000772954189" target="_blank">Apple Podcasts</a>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="episodes-coming reveal reveal-delay-2">
+
+  <!-- Season tabs — rendered by JS based on episodes.json -->
+  <div class="season-tabs" id="season-tabs"></div>
+
+  <!-- Episode grid — rendered by JS -->
+  <div id="episodes-container"></div>
+
+  <!-- Email signup — always shown below episodes -->
+  <div class="episodes-coming reveal" style="margin-top:56px;">
     <div class="episodes-icon">&#127897;&#65039;</div>
     <div class="episodes-soon-title">More Conversations Coming Every Week</div>
     <p class="episodes-soon-sub">Sign up to learn about new episodes as they&rsquo;re launched/dropped.</p>
@@ -367,6 +372,97 @@
     <p class="mc-success" id="notify-success">&#10003; You&rsquo;re on the list! We&rsquo;ll be in touch when episodes drop.</p>
   </div>
 </section>
+
+<script>
+(function() {
+  const PER_PAGE = 5;
+  let activeSeason = 0;
+  let currentPage = 0;
+  let seasonsData = [];
+
+  function renderTabs(seasons) {
+    const tabsEl = document.getElementById('season-tabs');
+    tabsEl.innerHTML = '';
+    seasons.forEach((s, i) => {
+      if (!s.visible) return;
+      const btn = document.createElement('button');
+      btn.className = 'season-tab' + (i === activeSeason ? ' active' : '');
+      btn.textContent = s.label;
+      btn.addEventListener('click', () => {
+        activeSeason = i;
+        currentPage = 0;
+        renderTabs(seasons);
+        renderEpisodes(seasons[i]);
+      });
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  function renderEpisodes(season) {
+    const container = document.getElementById('episodes-container');
+    const eps = season.episodes || [];
+    // Newest first
+    const sorted = [...eps].reverse();
+    const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+    const pageEps = sorted.slice(currentPage * PER_PAGE, (currentPage + 1) * PER_PAGE);
+
+    let html = '<p class="season-subtitle">' + season.subtitle + '</p>';
+
+    if (eps.length === 0) {
+      html += '<div class="season-empty">Guest episodes are on their way.<br>Check back soon.</div>';
+    } else {
+      html += '<div class="episodes-grid">';
+      pageEps.forEach(ep => {
+        const yt  = ep.links.youtube ? '<a class="episode-link" href="' + ep.links.youtube + '" target="_blank">&#9654; YouTube</a>' : '';
+        const sp  = ep.links.spotify ? '<a class="episode-link" href="' + ep.links.spotify + '" target="_blank">Spotify</a>' : '';
+        const apl = ep.links.apple   ? '<a class="episode-link" href="' + ep.links.apple   + '" target="_blank">Apple Podcasts</a>' : '';
+        html += '<div class="episode-card">'
+              +   '<div class="episode-num">' + ep.num + '</div>'
+              +   '<div class="episode-body">'
+              +     '<div class="episode-title">' + ep.title + '</div>'
+              +     '<p class="episode-desc">' + ep.desc + '</p>'
+              +     '<div class="episode-links">' + yt + sp + apl + '</div>'
+              +   '</div>'
+              + '</div>';
+      });
+      html += '</div>';
+
+      if (totalPages > 1) {
+        html += '<div class="ep-pagination">';
+        for (let p = 0; p < totalPages; p++) {
+          html += '<button class="ep-page-btn' + (p === currentPage ? ' active' : '') + '" data-page="' + p + '">' + (p + 1) + '</button>';
+        }
+        html += '</div>';
+      }
+    }
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.ep-page-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentPage = parseInt(btn.dataset.page);
+        renderEpisodes(season);
+        document.getElementById('episodes').scrollIntoView({behavior:'smooth', block:'start'});
+      });
+    });
+  }
+
+  fetch('episodes.json')
+    .then(r => r.json())
+    .then(data => {
+      seasonsData = data.seasons;
+      // Find first visible season as default
+      activeSeason = seasonsData.findIndex(s => s.visible);
+      if (activeSeason < 0) activeSeason = 0;
+      renderTabs(seasonsData);
+      renderEpisodes(seasonsData[activeSeason]);
+    })
+    .catch(() => {
+      document.getElementById('episodes-container').innerHTML =
+        '<div class="season-empty">Episodes coming soon.</div>';
+    });
+})();
+</script>
 
 <section class="contact-section" id="contact">
   <div class="reveal">
