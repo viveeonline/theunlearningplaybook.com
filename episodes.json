@@ -1,0 +1,29 @@
+{
+  "seasons": [
+    {
+      "id": "s1",
+      "label": "Season 1",
+      "subtitle": "Solo Episodes",
+      "visible": true,
+      "episodes": [
+        {
+          "num": "01",
+          "title": "TUP1: The Day My Playbook Stopped Working",
+          "desc": "Why moving from viewing training as an \u201cevent\u201d to treating it as a \u201csystemic intervention\u201d is the key to creating lasting change \u2014 and what it took to unlearn the old way.",
+          "links": {
+            "youtube": "https://www.youtube.com/watch?v=UB4dAqYOawU&list=PLbCM4pj3ScBC6AyNVp-HRRccUESqLCnBZ",
+            "spotify": "https://open.spotify.com/episode/3k3Hyr8zZOYxaKmAEqqcwD",
+            "apple": "https://podcasts.apple.com/us/podcast/tup1-the-day-my-playbook-stopped-working/id1896925389?i=1000772954189"
+          }
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "label": "Season 2",
+      "subtitle": "Guest Episodes",
+      "visible": false,
+      "episodes": []
+    }
+  ]
+}
